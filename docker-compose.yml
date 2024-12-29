@@ -2,8 +2,8 @@ x-base_service: &base_service
     ports:
       - "${WEBUI_PORT:-7860}:7860"
     volumes:
-      - &v1 ./data:/data
-      - &v2 ./output:/output
+      - &v1 nas-data:/data
+      - &v2 nas-output:/output
     stop_signal: SIGKILL
     tty: true
     deploy:
@@ -13,6 +13,10 @@ x-base_service: &base_service
               - driver: nvidia
                 device_ids: ['0']
                 capabilities: [compute, utility]
+      # restart_policy:
+      #   delay: 5s
+      #   max_attempts: 10
+      #   window: 120s
 
 name: webui-docker
 
@@ -53,3 +57,19 @@ services:
     deploy: {}
     environment:
       - CLI_ARGS=--cpu
+
+volumes:
+  nas: &nas
+    driver: local
+    driver_opts:
+      type: cifs
+      o: username=${SMB_USERNAME},password=${SMB_PASSWORD},vers=2.0
+      device: "//${SMB_IP_ADDRESS}/stable-diffusion"
+  nas-data:
+    <<: *nas
+    driver_opts:
+      device: "//${SMB_IP_ADDRESS}/stable-diffusion/data"
+  nas-output:
+    <<: *nas
+    driver_opts:
+      device: "//${SMB_IP_ADDRESS}/stable-diffusion/output"
